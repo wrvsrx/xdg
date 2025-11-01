@@ -1,6 +1,6 @@
 name = "xdg"
 version = "0.1.0"
-defaultTargets = ["xdg"]
+defaultTargets = ["xdg", "System.Xdg"]
 
 [[lean_lib]]
 name = "System.Xdg"
