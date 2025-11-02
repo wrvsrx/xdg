@@ -2,11 +2,9 @@
   description = "flake template";
 
   inputs = {
-    nixpkgs.url = "github:wrvsrx/nixpkgs/patched-nixos-unstable";
-    flake-parts = {
-      url = "github:hercules-ci/flake-parts";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
+    nur-wrvsrx.url = "github:wrvsrx/nur-packages";
+    nixpkgs.follows = "nur-wrvsrx/nixpkgs";
+    flake-parts.follows = "nur-wrvsrx/flake-parts";
   };
 
   outputs =
@@ -16,9 +14,13 @@
       {
         systems = [ "x86_64-linux" ];
         perSystem =
-          { pkgs, ... }:
+          { pkgs, system, ... }:
           rec {
-            packages.default = pkgs.callPackage ./default.nix { };
+            _module.args.pkgs = import inputs.nixpkgs {
+              overlays = [ inputs.nur-wrvsrx.overlays.default ];
+              inherit system;
+            };
+            packages.default = pkgs.leanPackages.callPackage ./default.nix { };
             devShells.default = pkgs.mkShell { inputsFrom = [ packages.default ]; };
             formatter = pkgs.nixfmt;
           };

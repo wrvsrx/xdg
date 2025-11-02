@@ -1,9 +1,15 @@
-{ stdenvNoCC, lean4 }:
-stdenvNoCC.mkDerivation {
+{
+  stdenv,
+  lean4,
+  lakeSetupHook,
+  writeText,
+}:
+stdenv.mkDerivation {
   name = "xdg";
-  src = ./.;
-  nativeBuildInputs = [ lean4 ];
-  installPhase = ''
-    mkdir -p $out
-  '';
+  src = builtins.path { path = ./.; };
+  env.NIX_LAKE_MANIFEST_OVERRIDE = writeText "lake-manifest-override.json" (builtins.toJSON [ ]);
+  nativeBuildInputs = [
+    lean4
+    lakeSetupHook
+  ];
 }
