@@ -100,16 +100,12 @@ def getConfigDirs : IO (List System.FilePath) := do
 
   pure $ (userConfigHome.map (· :: envDirs)).getD envDirs
 
-/-- Join file path components -/
-def joinPath (dir : System.FilePath) (file : String) : System.FilePath :=
-  ⟨dir.toString ++ "/" ++ file⟩
-
 /-- Read file from first available directory -/
-def readFileFromDirs (dirs : List System.FilePath) (subPath : String) : IO String := do
+def readFileFromDirs (dirs : List System.FilePath) (subPath : System.FilePath) : IO String := do
   let rec tryDirs : List System.FilePath → IO String
     | [] => throw (IO.userError "No readable file found")
     | dir :: rest => do
-      let filePath := joinPath dir subPath
+      let filePath := dir / subPath
       try
         IO.FS.readFile filePath
       catch _ =>
@@ -117,31 +113,31 @@ def readFileFromDirs (dirs : List System.FilePath) (subPath : String) : IO Strin
   tryDirs dirs
 
 /-- Read file from single directory -/
-def readFileFromDir (getDir : IO System.FilePath) (subPath : String) : IO String := do
+def readFileFromDir (getDir : IO System.FilePath) (subPath : System.FilePath) : IO String := do
   let dir ← getDir
-  let filePath := joinPath dir subPath
+  let filePath := dir / subPath
   IO.FS.readFile filePath
 
 /-- Read data file from XDG data directories -/
-def readDataFile (subPath : String) : IO String := do
+def readDataFile (subPath : System.FilePath) : IO String := do
   let dirs ← getDataDirs
   readFileFromDirs dirs subPath
 
 /-- Read config file from XDG config directories -/
-def readConfigFile (subPath : String) : IO String := do
+def readConfigFile (subPath : System.FilePath) : IO String := do
   let dirs ← getConfigDirs
   readFileFromDirs dirs subPath
 
 /-- Read state file from XDG state home -/
-def readStateFile (subPath : String) : IO String :=
+def readStateFile (subPath : System.FilePath) : IO String :=
   readFileFromDir getStateHome subPath
 
 /-- Read cache file from XDG cache home -/
-def readCacheFile (subPath : String) : IO String :=
+def readCacheFile (subPath : System.FilePath) : IO String :=
   readFileFromDir getCacheHome subPath
 
 /-- Read runtime file from XDG runtime directory -/
-def readRuntimeFile (subPath : String) : IO String :=
+def readRuntimeFile (subPath : System.FilePath) : IO String :=
   readFileFromDir getRuntimeDir subPath
 
 /-- Ensure directory exists -/
@@ -149,10 +145,10 @@ def ensureDir (dir : System.FilePath) : IO Unit := do
   IO.FS.createDirAll dir
 
 /-- Write file to directory -/
-def writeFileToDir (getDir : IO System.FilePath) (subPath : String) (content : String) : IO Unit := do
+def writeFileToDir (getDir : IO System.FilePath) (subPath : System.FilePath) (content : String) : IO Unit := do
   let dir ← getDir
   ensureDir dir
-  let filePath := joinPath dir subPath
+  let filePath := dir / subPath
   -- Create parent directory if it doesn't exist
   match filePath.parent with
   | some parent => ensureDir parent
@@ -160,23 +156,23 @@ def writeFileToDir (getDir : IO System.FilePath) (subPath : String) (content : S
   IO.FS.writeFile filePath content
 
 /-- Write config file to XDG config home -/
-def writeConfigFile (subPath : String) (content : String) : IO Unit :=
+def writeConfigFile (subPath : System.FilePath) (content : String) : IO Unit :=
   writeFileToDir getConfigHome subPath content
 
 /-- Write data file to XDG data home -/
-def writeDataFile (subPath : String) (content : String) : IO Unit :=
+def writeDataFile (subPath : System.FilePath) (content : String) : IO Unit :=
   writeFileToDir getDataHome subPath content
 
 /-- Write cache file to XDG cache home -/
-def writeCacheFile (subPath : String) (content : String) : IO Unit :=
+def writeCacheFile (subPath : System.FilePath) (content : String) : IO Unit :=
   writeFileToDir getCacheHome subPath content
 
 /-- Write state file to XDG state home -/
-def writeStateFile (subPath : String) (content : String) : IO Unit :=
+def writeStateFile (subPath : System.FilePath) (content : String) : IO Unit :=
   writeFileToDir getStateHome subPath content
 
 /-- Write runtime file to XDG runtime directory -/
-def writeRuntimeFile (subPath : String) (content : String) : IO Unit :=
+def writeRuntimeFile (subPath : System.FilePath) (content : String) : IO Unit :=
   writeFileToDir getRuntimeDir subPath content
 
 /-- Try to read file, returning None if it fails -/
@@ -187,23 +183,23 @@ def maybeReadFile (action : IO String) : IO (Option String) := do
     pure none
 
 /-- Maybe read data file -/
-def maybeReadDataFile (subPath : String) : IO (Option String) :=
+def maybeReadDataFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readDataFile subPath)
 
 /-- Maybe read config file -/
-def maybeReadConfigFile (subPath : String) : IO (Option String) :=
+def maybeReadConfigFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readConfigFile subPath)
 
 /-- Maybe read state file -/
-def maybeReadStateFile (subPath : String) : IO (Option String) :=
+def maybeReadStateFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readStateFile subPath)
 
 /-- Maybe read cache file -/
-def maybeReadCacheFile (subPath : String) : IO (Option String) :=
+def maybeReadCacheFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readCacheFile subPath)
 
 /-- Maybe read runtime file -/
-def maybeReadRuntimeFile (subPath : String) : IO (Option String) :=
+def maybeReadRuntimeFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readRuntimeFile subPath)
 
 -- Export a hello function for the main file to use temporarily
