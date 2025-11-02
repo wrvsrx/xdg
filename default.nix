@@ -5,7 +5,8 @@
   writeText,
 }:
 stdenv.mkDerivation {
-  name = "xdg";
+  pname = "xdg";
+  version = "0.2.0";
   src = builtins.path { path = ./.; };
   env.NIX_LAKE_MANIFEST_OVERRIDE = writeText "lake-manifest-override.json" (builtins.toJSON [ ]);
   nativeBuildInputs = [
