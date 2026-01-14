@@ -68,7 +68,7 @@ def getRuntimeDir : IO System.FilePath := do
 
 /-- Split string by separator -/
 def splitBy (sep : Char) (s : String) : List String :=
-  s.split (· == sep) |>.filter (· ≠ "")
+  s.splitToList (· == sep) |>.filter (· ≠ "")
 
 /-- Parse XDG directories from colon-separated environment variable -/
 def parseXdgDirs (envValue : String) : List System.FilePath :=
