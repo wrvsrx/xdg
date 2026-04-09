@@ -1,6 +1,7 @@
 name = "xdg"
 version = "0.3.0"
 defaultTargets = ["xdg", "System.Xdg"]
+testDriver = "test"
 
 [[lean_lib]]
 name = "System.Xdg"
@@ -8,3 +9,7 @@ name = "System.Xdg"
 [[lean_exe]]
 name = "xdg"
 root = "Main"
+
+[[lean_exe]]
+name = "test"
+root = "Test.Main"
