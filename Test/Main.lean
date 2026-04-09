@@ -163,15 +163,13 @@ private def testPublicApi (f : IO.Ref Nat) : IO Unit := do
   let _ := userDirs
   ok "readUserDirs does not throw"
 
-  -- getUserDir for unknown key: should return $HOME (or "")
-  let home := (← IO.getEnv "HOME").getD ""
   let p ← System.Xdg.UserDir.getUserDir "DOES_NOT_EXIST_XYZ_ABC"
-  check "unknown key returns HOME" p.toString home f
+  check "unknown key returns none" p none f
 
   -- getUserDir for common keys: should return a non-empty path
   for key in ["DESKTOP", "DOWNLOAD", "DOCUMENTS", "MUSIC", "PICTURES", "VIDEOS"] do
     let dir ← System.Xdg.UserDir.getUserDir key
-    checkTrue s!"getUserDir {key} is non-empty" (!dir.toString.isEmpty) f
+    checkTrue s!"getUserDir {key} is non-empty" (!dir.isNone) f
 
 -- ---------------------------------------------------------------------------
 -- Entry point

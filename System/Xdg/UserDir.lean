@@ -116,15 +116,11 @@ def readUserDirs : IO (List (String × String)) := do
     - Absolute values (starting with `/`) are returned as-is.
     - Relative values are resolved against `$HOME`.
     - If the name is not configured anywhere, `$HOME` is returned. -/
-def getUserDir (name : String) : IO System.FilePath := do
-  let home := (← IO.getEnv "HOME").getD ""
+def getUserDir (name : String) : IO (Option System.FilePath) := do
   let defaults ← readDefaults
   let userDirs ← readUserDirs
   -- User entries prepended so that List.lookup finds them first
-  match (userDirs ++ defaults).lookup name with
-  | none     => pure ⟨home⟩
-  | some val =>
-    if val.startsWith "/" then pure ⟨val⟩
-    else pure (⟨home⟩ / ⟨val⟩)
+  pure (((userDirs ++ defaults).lookup name).map (fun path => ⟨path⟩ ))
+
 
 end System.Xdg.UserDir
