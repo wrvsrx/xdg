@@ -3,6 +3,6 @@
 }:
 leanPackages.buildLakePackage {
   pname = "xdg";
-  version = "0.3.0";
+  version = "0.3.0-dev";
   src = builtins.path { path = ./.; };
 }
