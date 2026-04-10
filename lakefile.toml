@@ -10,6 +10,10 @@ name = "System.Xdg"
 name = "xdg"
 root = "Main"
 
+[[lean_lib]]
+name = "Test"
+srcDir = "."
+
 [[lean_exe]]
 name = "test"
 root = "Test.Main"
