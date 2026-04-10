@@ -1,5 +1,5 @@
-import Test.Xdg
-import Test.UserDir
+import Test.System.Xdg
+import Test.System.Xdg.UserDir
 
 def main : IO UInt32 := do
   let failures ← IO.mkRef (0 : Nat)
