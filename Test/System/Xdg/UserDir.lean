@@ -99,23 +99,24 @@ def testReadPairs (f : IO.Ref Nat) : IO Unit := do
   let pairs2 ← readPairs ⟨"/tmp/xdg_lean_no_such_file_abc123"⟩
   check "missing file returns []" pairs2 [] f
 
-def testPublicApi (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.UserDir – public API"
-
-  let defs ← System.Xdg.UserDir.readDefaults
-  let _ := defs
-  ok "readDefaults does not throw"
-
-  let userDirs ← System.Xdg.UserDir.readUserDirs
-  let _ := userDirs
-  ok "readUserDirs does not throw"
-
-  let p ← System.Xdg.UserDir.getUserDir "DOES_NOT_EXIST_XYZ_ABC"
-  check "unknown key returns none" p none f
-
-  for key in ["DESKTOP", "DOWNLOAD", "DOCUMENTS", "MUSIC", "PICTURES", "VIDEOS"] do
-    let dir ← System.Xdg.UserDir.getUserDir key
-    checkTrue s!"getUserDir {key} is non-empty" (!dir.isNone) f
+def testGetUserDirWithCustomGetEnv (f : IO.Ref Nat) : IO Unit := do
+  IO.println "System.Xdg.UserDir.Internal.getUserDirWithCustomGetEnv"
+  let userDirs : List (String × String) := [("DESKTOP", "$HOME/Desktop"), ("DOWNLOAD", "/mnt/downloads")]
+  let defaults : List (String × String) := [("DESKTOP", "Desktop"), ("DOCUMENTS", "$HOME/Documents")]
+  let mockEnv : List (String × String) := [("HOME", "/home/user")]
+  let getEnv := fun name => pure (mockEnv.lookup name)
+  check "user entry takes precedence over default"
+    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DESKTOP")
+    (some ⟨"/home/user/Desktop"⟩) f
+  check "absolute value returned as-is"
+    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DOWNLOAD")
+    (some ⟨"/mnt/downloads"⟩) f
+  check "falls back to default when absent from user dirs"
+    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DOCUMENTS")
+    (some ⟨"/home/user/Documents"⟩) f
+  check "returns none when absent from both"
+    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "VIDEOS")
+    none f
 
 def runUserDirTests (f : IO.Ref Nat) : IO Unit := do
   testNotComment f
@@ -125,4 +126,4 @@ def runUserDirTests (f : IO.Ref Nat) : IO Unit := do
   testExpandVarsIO f
   testPairToXdgPair f
   testReadPairs f
-  testPublicApi f
+  testGetUserDirWithCustomGetEnv f

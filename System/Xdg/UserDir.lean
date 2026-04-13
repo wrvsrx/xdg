@@ -102,6 +102,18 @@ def pairToXdgPair (pair : String × String) : Option (String × String) :=
   | ["XDG", var, "DIR"] => some (var, value)
   | _                   => none
 
+/-- Look up a named XDG user directory from pre-loaded `userDirs` and `defaults`
+    lists, expanding `$VAR` references via the injected `getEnv`.
+    User entries take precedence over defaults.
+    Returns `none` if the key is absent from both lists. -/
+def getUserDirWithCustomGetEnv
+    (userDirs defaults : List (String × String))
+    (getEnv : String → IO (Option String))
+    (name : String) : IO (Option System.FilePath) := do
+  match (userDirs ++ defaults).lookup name with
+  | none      => pure none
+  | some path => pure (some ⟨← expandVarsIO getEnv path⟩)
+
 end System.Xdg.UserDir.Internal
 
 /-! ## Public API -/
@@ -133,10 +145,7 @@ def readUserDirs : IO (List (String × String)) := do
 def getUserDir (name : String) : IO (Option System.FilePath) := do
   let defaults ← readDefaults
   let userDirs ← readUserDirs
-  -- User entries prepended so that List.lookup finds them first
-  match (userDirs ++ defaults).lookup name with
-  | none      => pure none
-  | some path => do pure (some ⟨← expandVarsIO (fun s => IO.getEnv s) path⟩)
+  getUserDirWithCustomGetEnv userDirs defaults (fun s => IO.getEnv s) name
 
 
 end System.Xdg.UserDir
