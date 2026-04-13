@@ -48,9 +48,24 @@ def renderElements (env : List (String × String)) (elems : List Element) : Stri
     | Element.fixed c  => acc.push c
     | Element.var name => acc ++ (env.lookup name).getD "") ""
 
-/-- Expand `$VAR` references in a string using the given environment. -/
+/-- Expand `$VAR` references in a string using the given environment list. -/
 def expandVars (env : List (String × String)) (s : String) : String :=
   renderElements env (parseString s)
+
+/-- Expand `$VAR` references in a string by calling `getEnv` for each variable
+    found. Unknown variables expand to the empty string.
+    The `getEnv` parameter allows callers to inject a custom lookup function
+    (e.g. a mock in tests). Pass `IO.getEnv` for normal use.
+    Note: Lean 4 does not provide an API to enumerate all environment variables,
+    so we resolve each variable name individually via `getEnv`. -/
+def expandVarsIO (getEnv : String → IO (Option String)) (s : String) : IO String := do
+  let elems := parseString s
+  let mut result := ""
+  for e in elems do
+    match e with
+    | Element.fixed c  => result := result.push c
+    | Element.var name => result := result ++ (← getEnv name).getD ""
+  return result
 
 /-- Return `true` for lines that are neither empty nor comments (starting with `#`). -/
 def notComment (line : String) : Bool :=
@@ -102,8 +117,8 @@ def readDefaults : IO (List (String × String)) :=
   readPairs ⟨"/etc/xdg/user-dirs.defaults"⟩
 
 /-- Read the user-configured XDG user directories from `user-dirs.dirs` inside
-    the XDG config home directory.  `$VAR` references in values are expanded
-    using the current process environment. -/
+    the XDG config home directory. Values are returned as-is; call `getUserDir`
+    to get paths with `$VAR` references expanded. -/
 def readUserDirs : IO (List (String × String)) := do
   let configHome ← getConfigHome
   let pairs ← readPairs (configHome / "user-dirs.dirs")
@@ -113,12 +128,15 @@ def readUserDirs : IO (List (String × String)) := do
     Looks up `name` in the merged list of user-configured directories
     (`$XDG_CONFIG_HOME/user-dirs.dirs`) and system defaults
     (`/etc/xdg/user-dirs.defaults`). User entries take precedence.
+    `$VAR` references in the value are expanded using the current process environment.
     Returns `none` if the key is absent from both sources. -/
 def getUserDir (name : String) : IO (Option System.FilePath) := do
   let defaults ← readDefaults
   let userDirs ← readUserDirs
   -- User entries prepended so that List.lookup finds them first
-  pure (((userDirs ++ defaults).lookup name).map (fun path => ⟨path⟩ ))
+  match (userDirs ++ defaults).lookup name with
+  | none      => pure none
+  | some path => do pure (some ⟨← expandVarsIO (fun s => IO.getEnv s) path⟩)
 
 
 end System.Xdg.UserDir
