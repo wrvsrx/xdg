@@ -40,18 +40,6 @@ private partial def parseStringAux : List Char → List Element
 def parseString (s : String) : List Element :=
   parseStringAux s.toList
 
-/-- Render parsed elements by substituting variables from the environment.
-    Unknown variables expand to the empty string. -/
-def renderElements (env : List (String × String)) (elems : List Element) : String :=
-  elems.foldl (fun acc e =>
-    match e with
-    | Element.fixed c  => acc.push c
-    | Element.var name => acc ++ (env.lookup name).getD "") ""
-
-/-- Expand `$VAR` references in a string using the given environment list. -/
-def expandVars (env : List (String × String)) (s : String) : String :=
-  renderElements env (parseString s)
-
 /-- Expand `$VAR` references in a string by calling `getEnv` for each variable
     found. Unknown variables expand to the empty string.
     The `getEnv` parameter allows callers to inject a custom lookup function

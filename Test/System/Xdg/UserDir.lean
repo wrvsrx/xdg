@@ -37,18 +37,6 @@ def testParsePair (f : IO.Ref Nat) : IO Unit := do
     (parsePair "XDG_DESKTOP_DIR=\"$HOME/Desktop\"")
     (some ("XDG_DESKTOP_DIR", "$HOME/Desktop")) f
 
-def testExpandVars (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.UserDir.Internal.expandVars"
-  let env : List (String × String) := [("HOME", "/home/user"), ("XDG", "/xdg")]
-  check "single var"         (expandVars env "$HOME")               "/home/user"            f
-  check "var with path"      (expandVars env "$HOME/Downloads")     "/home/user/Downloads"  f
-  check "two vars"           (expandVars env "$HOME/$XDG")          "/home/user//xdg"       f
-  check "no vars"            (expandVars env "novar")               "novar"                 f
-  check "unknown var"        (expandVars env "$UNKNOWN")            ""                      f
-  check "lone dollar"        (expandVars env "price: $")            "price: $"              f
-  check "dollar before sep"  (expandVars env "$/path")              "$/path"                f
-  check "empty string"       (expandVars env "")                    ""                      f
-
 def testExpandVarsIO (f : IO.Ref Nat) : IO Unit := do
   IO.println "System.Xdg.UserDir.Internal.expandVarsIO"
   let mockEnv : List (String × String) := [("HOME", "/home/user"), ("XDG", "/xdg")]
@@ -122,7 +110,6 @@ def runUserDirTests (f : IO.Ref Nat) : IO Unit := do
   testNotComment f
   testStripQuotes f
   testParsePair f
-  testExpandVars f
   testExpandVarsIO f
   testPairToXdgPair f
   testReadPairs f
