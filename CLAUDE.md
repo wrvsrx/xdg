@@ -38,7 +38,7 @@ Tests live under `Test/` and are a `[[lean_lib]]` named `Test` in `lakefile.toml
 - `Test/UserDir.lean` — pure and IO tests for `System.Xdg.UserDir`; exports `runUserDirTests`
 - `Test/Main.lean` — entry point that calls `runXdgTests` and `runUserDirTests`
 
-The `Internal` namespace in `UserDir.lean` is intentionally public so unit tests can reach parsing helpers (`parsePair`, `expandVars`, `xdgVar`, `readPairs`, etc.) directly.
+The `Internal` namespace in `UserDir.lean` is intentionally public so unit tests can reach parsing helpers (`parsePair`, `expandVars`, `pairToXdgPair`, `readPairs`, etc.) directly.
 
 ### `getUserDir` lookup order
 

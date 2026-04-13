@@ -49,29 +49,28 @@ def testExpandVars (f : IO.Ref Nat) : IO Unit := do
   check "dollar before sep"  (expandVars env "$/path")              "$/path"                f
   check "empty string"       (expandVars env "")                    ""                      f
 
-def testXdgVar (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.UserDir.Internal.xdgVar"
-  let env : List (String × String) := [("HOME", "/home/user")]
+def testPairToXdgPair (f : IO.Ref Nat) : IO Unit := do
+  IO.println "System.Xdg.UserDir.Internal.pairToXdgPair"
   check "DESKTOP entry"
-    (xdgVar env ("XDG_DESKTOP_DIR", "$HOME/Desktop"))
-    (some ("DESKTOP", "/home/user/Desktop")) f
+    (pairToXdgPair ("XDG_DESKTOP_DIR", "$HOME/Desktop"))
+    (some ("DESKTOP", "$HOME/Desktop")) f
   check "DOWNLOAD entry"
-    (xdgVar env ("XDG_DOWNLOAD_DIR", "$HOME/Downloads"))
-    (some ("DOWNLOAD", "/home/user/Downloads")) f
+    (pairToXdgPair ("XDG_DOWNLOAD_DIR", "$HOME/Downloads"))
+    (some ("DOWNLOAD", "$HOME/Downloads")) f
   check "absolute value"
-    (xdgVar env ("XDG_MUSIC_DIR", "/mnt/music"))
+    (pairToXdgPair ("XDG_MUSIC_DIR", "/mnt/music"))
     (some ("MUSIC", "/mnt/music")) f
   check "plain KEY=val (no XDG prefix)"
-    (xdgVar env ("DESKTOP", "Desktop"))
+    (pairToXdgPair ("DESKTOP", "Desktop"))
     none f
   check "too few parts"
-    (xdgVar env ("XDG_DIR", "foo"))
+    (pairToXdgPair ("XDG_DIR", "foo"))
     none f
   check "too many parts"
-    (xdgVar env ("XDG_EXTRA_DESKTOP_DIR", "foo"))
+    (pairToXdgPair ("XDG_EXTRA_DESKTOP_DIR", "foo"))
     none f
   check "missing DIR suffix"
-    (xdgVar env ("XDG_DESKTOP_path", "foo"))
+    (pairToXdgPair ("XDG_DESKTOP_path", "foo"))
     none f
 
 def testReadPairs (f : IO.Ref Nat) : IO Unit := do
@@ -110,6 +109,6 @@ def runUserDirTests (f : IO.Ref Nat) : IO Unit := do
   testStripQuotes f
   testParsePair f
   testExpandVars f
-  testXdgVar f
+  testPairToXdgPair f
   testReadPairs f
   testPublicApi f

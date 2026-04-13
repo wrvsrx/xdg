@@ -78,13 +78,13 @@ def readPairs (path : System.FilePath) : IO (List (String × String)) := do
   let content ← try IO.FS.readFile path catch _ => return []
   return content.splitOn "\n" |>.filter notComment |>.filterMap parsePair
 
-/-- Given an environment, try to interpret a `NAME=VALUE` pair as an XDG user
-    directory entry.  Entries of the form `XDG_FOO_DIR=value` yield `("FOO", value)`
-    with `$VAR` references expanded; all other entries yield `none`. -/
-def xdgVar (env : List (String × String)) (pair : String × String) : Option (String × String) :=
+/-- Try to interpret a `NAME=VALUE` pair as an XDG user directory entry.
+    Entries of the form `XDG_FOO_DIR=value` yield `("FOO", value)`;
+    all other entries yield `none`. -/
+def pairToXdgPair (pair : String × String) : Option (String × String) :=
   let (name, value) := pair
   match name.splitOn "_" with
-  | ["XDG", var, "DIR"] => some (var, expandVars env value)
+  | ["XDG", var, "DIR"] => some (var, value)
   | _                   => none
 
 end System.Xdg.UserDir.Internal
@@ -107,8 +107,7 @@ def readDefaults : IO (List (String × String)) :=
 def readUserDirs : IO (List (String × String)) := do
   let configHome ← getConfigHome
   let pairs ← readPairs (configHome / "user-dirs.dirs")
-  let env  : List (String × String) := []
-  return pairs.filterMap (xdgVar env)
+  return pairs.filterMap pairToXdgPair
 
 /-- Return the path for a named XDG user directory (e.g. `"DOWNLOAD"`, `"DESKTOP"`).
     Looks up `name` in the merged list of user-configured directories
