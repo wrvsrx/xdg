@@ -103,19 +103,18 @@ def readDefaults : IO (List (String × String)) :=
 
 /-- Read the user-configured XDG user directories from `user-dirs.dirs` inside
     the XDG config home directory.  `$VAR` references in values are expanded
-    using the current process environment (typically only `$HOME` is used). -/
+    using the current process environment. -/
 def readUserDirs : IO (List (String × String)) := do
   let configHome ← getConfigHome
   let pairs ← readPairs (configHome / "user-dirs.dirs")
-  let home := (← IO.getEnv "HOME").getD ""
-  let env  : List (String × String) := [("HOME", home)]
+  let env  : List (String × String) := []
   return pairs.filterMap (xdgVar env)
 
 /-- Return the path for a named XDG user directory (e.g. `"DOWNLOAD"`, `"DESKTOP"`).
-    User configuration takes precedence over system defaults.
-    - Absolute values (starting with `/`) are returned as-is.
-    - Relative values are resolved against `$HOME`.
-    - If the name is not configured anywhere, `$HOME` is returned. -/
+    Looks up `name` in the merged list of user-configured directories
+    (`$XDG_CONFIG_HOME/user-dirs.dirs`) and system defaults
+    (`/etc/xdg/user-dirs.defaults`). User entries take precedence.
+    Returns `none` if the key is absent from both sources. -/
 def getUserDir (name : String) : IO (Option System.FilePath) := do
   let defaults ← readDefaults
   let userDirs ← readUserDirs
