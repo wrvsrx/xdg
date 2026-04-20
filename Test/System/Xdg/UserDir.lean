@@ -37,18 +37,17 @@ def testParsePair (f : IO.Ref Nat) : IO Unit := do
     (parsePair "XDG_DESKTOP_DIR=\"$HOME/Desktop\"")
     (some ("XDG_DESKTOP_DIR", "$HOME/Desktop")) f
 
-def testExpandVarsIO (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.UserDir.Internal.expandVarsIO"
-  let mockEnv : List (String × String) := [("HOME", "/home/user"), ("XDG", "/xdg")]
-  let getEnv := fun name => pure (mockEnv.lookup name)
-  check "single var"        (← expandVarsIO getEnv "$HOME")              "/home/user"           f
-  check "var with path"     (← expandVarsIO getEnv "$HOME/Downloads")    "/home/user/Downloads" f
-  check "two vars"          (← expandVarsIO getEnv "$HOME/$XDG")         "/home/user//xdg"      f
-  check "no vars"           (← expandVarsIO getEnv "novar")              "novar"                f
-  check "unknown var"       (← expandVarsIO getEnv "$UNKNOWN")           ""                     f
-  check "lone dollar"       (← expandVarsIO getEnv "price: $")           "price: $"             f
-  check "dollar before sep" (← expandVarsIO getEnv "$/path")             "$/path"               f
-  check "empty string"      (← expandVarsIO getEnv "")                   ""                     f
+def testExpandVars (f : IO.Ref Nat) : IO Unit := do
+  IO.println "System.Xdg.UserDir.Internal.expandVars"
+  let mockEnv : Array (String × String) := #[("HOME", "/home/user"), ("XDG", "/xdg")]
+  check "single var"        (expandVars mockEnv "$HOME")              "/home/user"           f
+  check "var with path"     (expandVars mockEnv "$HOME/Downloads")    "/home/user/Downloads" f
+  check "two vars"          (expandVars mockEnv "$HOME/$XDG")         "/home/user//xdg"      f
+  check "no vars"           (expandVars mockEnv "novar")              "novar"                f
+  check "unknown var"       (expandVars mockEnv "$UNKNOWN")           ""                     f
+  check "lone dollar"       (expandVars mockEnv "price: $")           "price: $"             f
+  check "dollar before sep" (expandVars mockEnv "$/path")             "$/path"               f
+  check "empty string"      (expandVars mockEnv "")                   ""                     f
 
 def testPairToXdgPair (f : IO.Ref Nat) : IO Unit := do
   IO.println "System.Xdg.UserDir.Internal.pairToXdgPair"
@@ -87,30 +86,29 @@ def testReadPairs (f : IO.Ref Nat) : IO Unit := do
   let pairs2 ← readPairs ⟨"/tmp/xdg_lean_no_such_file_abc123"⟩
   check "missing file returns []" pairs2 [] f
 
-def testGetUserDirWithCustomGetEnv (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.UserDir.Internal.getUserDirWithCustomGetEnv"
+def testGetUserDirWithEnvs (f : IO.Ref Nat) : IO Unit := do
+  IO.println "System.Xdg.UserDir.Internal.getUserDirWithEnvs"
   let userDirs : List (String × String) := [("DESKTOP", "$HOME/Desktop"), ("DOWNLOAD", "/mnt/downloads")]
   let defaults : List (String × String) := [("DESKTOP", "Desktop"), ("DOCUMENTS", "$HOME/Documents")]
-  let mockEnv : List (String × String) := [("HOME", "/home/user")]
-  let getEnv := fun name => pure (mockEnv.lookup name)
+  let mockEnv : Array (String × String) := #[("HOME", "/home/user")]
   check "user entry takes precedence over default"
-    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DESKTOP")
+    (getUserDirWithEnvs userDirs defaults mockEnv "DESKTOP")
     (some ⟨"/home/user/Desktop"⟩) f
   check "absolute value returned as-is"
-    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DOWNLOAD")
+    (getUserDirWithEnvs userDirs defaults mockEnv "DOWNLOAD")
     (some ⟨"/mnt/downloads"⟩) f
   check "falls back to default when absent from user dirs"
-    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "DOCUMENTS")
+    (getUserDirWithEnvs userDirs defaults mockEnv "DOCUMENTS")
     (some ⟨"/home/user/Documents"⟩) f
   check "returns none when absent from both"
-    (← getUserDirWithCustomGetEnv userDirs defaults getEnv "VIDEOS")
+    (getUserDirWithEnvs userDirs defaults mockEnv "VIDEOS")
     none f
 
 def runUserDirTests (f : IO.Ref Nat) : IO Unit := do
   testNotComment f
   testStripQuotes f
   testParsePair f
-  testExpandVarsIO f
+  testExpandVars f
   testPairToXdgPair f
   testReadPairs f
-  testGetUserDirWithCustomGetEnv f
+  testGetUserDirWithEnvs f

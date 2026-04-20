@@ -1,4 +1,5 @@
 import System.Xdg
+import System.IO.GetEnvironment
 
 /-!
 # XDG User Directories
@@ -40,20 +41,15 @@ private partial def parseStringAux : List Char → List Element
 def parseString (s : String) : List Element :=
   parseStringAux s.toList
 
-/-- Expand `$VAR` references in a string by calling `getEnv` for each variable
-    found. Unknown variables expand to the empty string.
-    The `getEnv` parameter allows callers to inject a custom lookup function
-    (e.g. a mock in tests). Pass `IO.getEnv` for normal use.
-    Note: Lean 4 does not provide an API to enumerate all environment variables,
-    so we resolve each variable name individually via `getEnv`. -/
-def expandVarsIO (getEnv : String → IO (Option String)) (s : String) : IO String := do
+/-- Expand `$VAR` references in a string using a pre-loaded environment array.
+    Unknown variables expand to the empty string. -/
+def expandVars (envs : Array (String × String)) (s : String) : String :=
   let elems := parseString s
-  let mut result := ""
-  for e in elems do
+  elems.foldl (fun acc e =>
     match e with
-    | Element.fixed c  => result := result.push c
-    | Element.var name => result := result ++ (← getEnv name).getD ""
-  return result
+    | Element.fixed c  => acc.push c
+    | Element.var name => acc ++ (envs.find? (·.1 == name) |>.map (·.2) |>.getD ""))
+  ""
 
 /-- Return `true` for lines that are neither empty nor comments (starting with `#`). -/
 def notComment (line : String) : Bool :=
@@ -91,16 +87,16 @@ def pairToXdgPair (pair : String × String) : Option (String × String) :=
   | _                   => none
 
 /-- Look up a named XDG user directory from pre-loaded `userDirs` and `defaults`
-    lists, expanding `$VAR` references via the injected `getEnv`.
+    lists, expanding `$VAR` references using the provided environment array.
     User entries take precedence over defaults.
     Returns `none` if the key is absent from both lists. -/
-def getUserDirWithCustomGetEnv
+def getUserDirWithEnvs
     (userDirs defaults : List (String × String))
-    (getEnv : String → IO (Option String))
-    (name : String) : IO (Option System.FilePath) := do
+    (envs : Array (String × String))
+    (name : String) : Option System.FilePath :=
   match (userDirs ++ defaults).lookup name with
-  | none      => pure none
-  | some path => pure (some ⟨← expandVarsIO getEnv path⟩)
+  | none      => none
+  | some path => some ⟨expandVars envs path⟩
 
 end System.Xdg.UserDir.Internal
 
@@ -133,7 +129,8 @@ def readUserDirs : IO (List (String × String)) := do
 def getUserDir (name : String) : IO (Option System.FilePath) := do
   let defaults ← readDefaults
   let userDirs ← readUserDirs
-  getUserDirWithCustomGetEnv userDirs defaults (fun s => IO.getEnv s) name
+  let envs ← getEnvironment
+  return getUserDirWithEnvs userDirs defaults envs name
 
 
 end System.Xdg.UserDir
