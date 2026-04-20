@@ -17,7 +17,7 @@ let
   };
   self = leanPackages.buildLakePackage {
     pname = "xdg";
-    version = "0.7.0";
+    version = "0.8.0-dev";
     src = builtins.path { path = ./.; };
     leanDeps = [ get-environment ];
 
