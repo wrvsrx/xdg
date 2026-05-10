@@ -1,8 +1,6 @@
 import System.Xdg
 
 def main : IO Unit := do
-  IO.println s!"Hello, {System.Xdg.hello}!"
-
   -- Test XDG directory functions
   IO.println "=== XDG Directories ==="
 

@@ -196,7 +196,4 @@ def maybeReadCacheFile (subPath : System.FilePath) : IO (Option String) :=
 def maybeReadRuntimeFile (subPath : System.FilePath) : IO (Option String) :=
   maybeReadFile (readRuntimeFile subPath)
 
--- Export a hello function for the main file to use temporarily
-def hello : String := "XDG"
-
 end System.Xdg
