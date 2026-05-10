@@ -66,13 +66,11 @@ def getRuntimeDir : IO System.FilePath := do
   let dir ← requireEnv "XDG_RUNTIME_DIR"
   pure ⟨dir⟩
 
-/-- Split string by separator -/
-def splitBy (sep : Char) (s : String) : List String :=
-  s.splitToList (· == sep) |>.filter (· ≠ "")
-
 /-- Parse XDG directories from colon-separated environment variable -/
 def parseXdgDirs (envValue : String) : List System.FilePath :=
-  (splitBy ':' envValue).map (⟨·⟩)
+  envValue.splitOn ":"
+    |> List.filter (! ·.isEmpty)
+    |> List.map (⟨·⟩)
 
 /-- Get XDG data directories -/
 def getDataDirs : IO (List System.FilePath) := do
@@ -140,18 +138,14 @@ def readCacheFile (subPath : System.FilePath) : IO String :=
 def readRuntimeFile (subPath : System.FilePath) : IO String :=
   readFileFromDir getRuntimeDir subPath
 
-/-- Ensure directory exists -/
-def ensureDir (dir : System.FilePath) : IO Unit := do
-  IO.FS.createDirAll dir
-
 /-- Write file to directory -/
 def writeFileToDir (getDir : IO System.FilePath) (subPath : System.FilePath) (content : String) : IO Unit := do
   let dir ← getDir
-  ensureDir dir
+  IO.FS.createDirAll dir
   let filePath := dir / subPath
   -- Create parent directory if it doesn't exist
   match filePath.parent with
-  | some parent => ensureDir parent
+  | some parent => IO.FS.createDirAll parent
   | none => pure ()
   IO.FS.writeFile filePath content
 
