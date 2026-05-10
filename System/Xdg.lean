@@ -34,32 +34,32 @@ def getDataHome : IO System.FilePath := do
   match (← IO.getEnv "XDG_DATA_HOME") with
   | some path => pure ⟨path⟩
   | none => do
-    let home ← requireEnv "HOME"
-    pure ⟨home ++ "/.local/share"⟩
+    let home : FilePath := ⟨← requireEnv "HOME"⟩
+    pure (home / ".local" / "share")
 
 /-- Get XDG config home directory -/
 def getConfigHome : IO System.FilePath := do
   match (← IO.getEnv "XDG_CONFIG_HOME") with
   | some path => pure ⟨path⟩
   | none => do
-    let home ← requireEnv "HOME"
-    pure ⟨home ++ "/.config"⟩
+    let home : FilePath := ⟨← requireEnv "HOME"⟩
+    pure (home / ".config")
 
 /-- Get XDG state home directory -/
 def getStateHome : IO System.FilePath := do
   match (← IO.getEnv "XDG_STATE_HOME") with
   | some path => pure ⟨path⟩
   | none => do
-    let home ← requireEnv "HOME"
-    pure ⟨home ++ "/.local/state"⟩
+    let home : FilePath := ⟨← requireEnv "HOME"⟩
+    pure (home / ".local" / "state")
 
 /-- Get XDG cache home directory -/
 def getCacheHome : IO System.FilePath := do
   match (← IO.getEnv "XDG_CACHE_HOME") with
   | some path => pure ⟨path⟩
   | none => do
-    let home ← requireEnv "HOME"
-    pure ⟨home ++ "/.cache"⟩
+    let home : FilePath := ⟨← requireEnv "HOME"⟩
+    pure (home / ".cache")
 
 /-- Get XDG runtime directory -/
 def getRuntimeDir : IO System.FilePath := do
