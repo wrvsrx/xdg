@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 lake build
 
 # Run tests
-lake exe test
+lake test
 
 # Build a specific target
 lake build System.Xdg
