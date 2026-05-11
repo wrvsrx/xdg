@@ -1,4 +1,4 @@
-import System.Xdg
+import System.Xdg.Basic
 
 def main : IO Unit := do
   -- Test XDG directory functions
