@@ -1,5 +1,5 @@
 name = "xdg"
-version = "0.15.0-dev"
+version = "0.15.0"
 defaultTargets = ["Xdg"]
 testDriver = "XdgTest"
 
