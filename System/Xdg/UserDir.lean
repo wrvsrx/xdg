@@ -116,8 +116,8 @@ def readDefaults : IO (List (String × String)) :=
     the XDG config home directory. Values are returned as-is; call `getUserDir`
     to get paths with `$VAR` references expanded. -/
 def readUserDirs : IO (List (String × String)) := do
-  let configHome ← getConfigHome
-  let pairs ← readPairs (configHome / "user-dirs.dirs")
+  let configFile ← System.Xdg.getXdgDirectory System.Xdg.XdgDirectory.Config "user-dirs.dirs"
+  let pairs ← readPairs configFile
   return pairs.filterMap pairToXdgPair
 
 /-- Return the path for a named XDG user directory (e.g. `"DOWNLOAD"`, `"DESKTOP"`).
