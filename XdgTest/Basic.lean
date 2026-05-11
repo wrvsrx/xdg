@@ -1,4 +1,4 @@
-import System.Xdg
+import Xdg
 
 /--
 info: [FilePath.mk "/usr/share", FilePath.mk "/usr/local/share"]
