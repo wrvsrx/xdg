@@ -1,19 +1,19 @@
 import System.Xdg
-import Test.Harness
 
-open Test.Harness
+/--
+info: [FilePath.mk "/usr/share", FilePath.mk "/usr/local/share"]
+-/
+#guard_msgs in
+#eval System.Xdg.parseXdgDirs "/usr/share:/usr/local/share"
 
-def testParseXdgDirs (f : IO.Ref Nat) : IO Unit := do
-  IO.println "System.Xdg.parseXdgDirs"
-  check "two paths"
-    (System.Xdg.parseXdgDirs "/usr/share:/usr/local/share")
-    [⟨"/usr/share"⟩, ⟨"/usr/local/share"⟩] f
-  check "single path"
-    (System.Xdg.parseXdgDirs "/etc/xdg")
-    [⟨"/etc/xdg"⟩] f
-  check "empty string"
-    (System.Xdg.parseXdgDirs "")
-    [] f
+/--
+info: [FilePath.mk "/etc/xdg"]
+-/
+#guard_msgs in
+#eval System.Xdg.parseXdgDirs "/etc/xdg"
 
-def runXdgTests (f : IO.Ref Nat) : IO Unit := do
-  testParseXdgDirs f
+/--
+info: []
+-/
+#guard_msgs in
+#eval System.Xdg.parseXdgDirs ""
