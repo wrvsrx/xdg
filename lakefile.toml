@@ -3,12 +3,6 @@ version = "0.9.0-dev"
 defaultTargets = ["xdg", "System.Xdg"]
 testDriver = "Test.System.Xdg"
 
-[[require]]
-name = "GetEnvironment"
-git = "https://github.com/wrvsrx/get-environment.git"
-rev = "0.2.0"
-version = "0.2.0"
-
 [[lean_lib]]
 name = "System.Xdg"
 
