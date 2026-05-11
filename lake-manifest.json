@@ -1,5 +1,15 @@
 {"version": "1.1.0",
  "packagesDir": ".lake/packages",
- "packages": [],
+ "packages":
+ [{"url": "https://github.com/wrvsrx/get-environment.git",
+   "type": "git",
+   "subDir": null,
+   "scope": "",
+   "rev": "c87ba0907c75a08358db0e9d4c6923a15203eac9",
+   "name": "GetEnvironment",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "0.2.0",
+   "inherited": false,
+   "configFile": "lakefile.lean"}],
  "name": "xdg",
  "lakeDir": ".lake"}
