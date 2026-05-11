@@ -5,6 +5,7 @@ testDriver = "XdgTest"
 
 [[lean_lib]]
 name = "Xdg"
+defaultFacets = ["static"]
 
 [[lean_lib]]
 name = "XdgTest"
