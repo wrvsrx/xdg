@@ -6,6 +6,15 @@ It provides functions to get XDG directories for data, config, cache, state, and
 
 ## References
 - [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)
+
+## API Design
+The public API (`XdgDirectory`, `XdgDirectoryList`, `getXdgDirectory`, `getXdgDirectoryList`,
+`getHomeDirectory`, `getTemporaryDirectory`) mirrors the interface of the Haskell
+[`directory`](https://hackage.haskell.org/package/directory) library.
+See [`System.Directory`](https://hackage.haskell.org/package/directory/docs/System-Directory.html).
+
+`XdgDirectory.Runtime` (`XDG_RUNTIME_DIR`) is an extension not present in the Haskell library;
+it is included here because the XDG Base Directory Specification defines it.
 -/
 
 namespace System.Xdg
