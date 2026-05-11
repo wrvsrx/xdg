@@ -23,177 +23,96 @@ instance : ToString XdgError where
     | XdgError.invalidPath path => s!"Invalid path: {path}"
     | XdgError.noReadableFile => "No readable file found"
 
-/-- Get environment variable, throwing XdgError.missingEnv if not found -/
-def requireEnv (name : String) : IO String := do
+private def requireEnv (name : String) : IO String := do
   match (← IO.getEnv name) with
   | some value => pure value
   | none => throw (IO.userError s!"Missing environment variable: {name}")
 
-/-- Get XDG data home directory -/
-def getDataHome : IO System.FilePath := do
-  match (← IO.getEnv "XDG_DATA_HOME") with
-  | some path => pure ⟨path⟩
-  | none => do
-    let home : FilePath := ⟨← requireEnv "HOME"⟩
-    pure (home / ".local" / "share")
-
-/-- Get XDG config home directory -/
-def getConfigHome : IO System.FilePath := do
-  match (← IO.getEnv "XDG_CONFIG_HOME") with
-  | some path => pure ⟨path⟩
-  | none => do
-    let home : FilePath := ⟨← requireEnv "HOME"⟩
-    pure (home / ".config")
-
-/-- Get XDG state home directory -/
-def getStateHome : IO System.FilePath := do
-  match (← IO.getEnv "XDG_STATE_HOME") with
-  | some path => pure ⟨path⟩
-  | none => do
-    let home : FilePath := ⟨← requireEnv "HOME"⟩
-    pure (home / ".local" / "state")
-
-/-- Get XDG cache home directory -/
-def getCacheHome : IO System.FilePath := do
-  match (← IO.getEnv "XDG_CACHE_HOME") with
-  | some path => pure ⟨path⟩
-  | none => do
-    let home : FilePath := ⟨← requireEnv "HOME"⟩
-    pure (home / ".cache")
-
-/-- Get XDG runtime directory -/
-def getRuntimeDir : IO System.FilePath := do
-  let dir ← requireEnv "XDG_RUNTIME_DIR"
-  pure ⟨dir⟩
-
-/-- Parse XDG directories from colon-separated environment variable -/
 def parseXdgDirs (envValue : String) : List System.FilePath :=
   envValue.splitOn ":"
     |> List.filter (! ·.isEmpty)
     |> List.map (⟨·⟩)
 
-/-- Get XDG data directories -/
-def getDataDirs : IO (List System.FilePath) := do
-  let userDataHome ← try
-    some <$> getDataHome
-  catch _ =>
-    pure none
+/-- Get the current user's home directory -/
+def getHomeDirectory : IO System.FilePath :=
+  return ⟨← requireEnv "HOME"⟩
 
-  let envDirs := match (← IO.getEnv "XDG_DATA_DIRS") with
-    | some dirs => parseXdgDirs dirs
-    | none => [⟨"/usr/local/share"⟩, ⟨"/usr/share"⟩]
+/-- Get XDG data home directory -/
+private def getDataHome : IO System.FilePath := do
+  match (← IO.getEnv "XDG_DATA_HOME") with
+  | some path => pure ⟨path⟩
+  | none => return (← getHomeDirectory) / ".local" / "share"
 
-  pure $ (userDataHome.map (· :: envDirs)).getD envDirs
+/-- Get XDG config home directory -/
+private def getConfigHome : IO System.FilePath := do
+  match (← IO.getEnv "XDG_CONFIG_HOME") with
+  | some path => pure ⟨path⟩
+  | none => return (← getHomeDirectory) / ".config"
 
-/-- Get XDG config directories -/
-def getConfigDirs : IO (List System.FilePath) := do
-  let userConfigHome ← try
-    some <$> getConfigHome
-  catch _ =>
-    pure none
+/-- Get XDG state home directory -/
+private def getStateHome : IO System.FilePath := do
+  match (← IO.getEnv "XDG_STATE_HOME") with
+  | some path => pure ⟨path⟩
+  | none => return (← getHomeDirectory) / ".local" / "state"
 
-  let envDirs := match (← IO.getEnv "XDG_CONFIG_DIRS") with
-    | some dirs => parseXdgDirs dirs
-    | none => [⟨"/etc/xdg"⟩]
+/-- Get XDG cache home directory -/
+private def getCacheHome : IO System.FilePath := do
+  match (← IO.getEnv "XDG_CACHE_HOME") with
+  | some path => pure ⟨path⟩
+  | none => return (← getHomeDirectory) / ".cache"
 
-  pure $ (userConfigHome.map (· :: envDirs)).getD envDirs
+/-- Get XDG runtime directory -/
+private def getRuntimeDir : IO System.FilePath :=
+  return ⟨← requireEnv "XDG_RUNTIME_DIR"⟩
 
-/-- Read file from first available directory -/
-def readFileFromDirs (dirs : List System.FilePath) (subPath : System.FilePath) : IO String := do
-  let rec tryDirs : List System.FilePath → IO String
-    | [] => throw (IO.userError "No readable file found")
-    | dir :: rest => do
-      let filePath := dir / subPath
-      try
-        IO.FS.readFile filePath
-      catch _ =>
-        tryDirs rest
-  tryDirs dirs
+/-- XDG single-directory types for user-specific base directories -/
+inductive XdgDirectory where
+  /-- Data files (`XDG_DATA_HOME`, default `~/.local/share`) -/
+  | Data
+  /-- Configuration files (`XDG_CONFIG_HOME`, default `~/.config`) -/
+  | Config
+  /-- Non-essential cached data (`XDG_CACHE_HOME`, default `~/.cache`) -/
+  | Cache
+  /-- Persistent state data (`XDG_STATE_HOME`, default `~/.local/state`) -/
+  | State
+  /-- Runtime files (`XDG_RUNTIME_DIR`, no default) -/
+  | Runtime
+  deriving Repr, BEq, Inhabited
 
-/-- Read file from single directory -/
-def readFileFromDir (getDir : IO System.FilePath) (subPath : System.FilePath) : IO String := do
-  let dir ← getDir
-  let filePath := dir / subPath
-  IO.FS.readFile filePath
+/-- XDG directory-list types for system-wide base directory search paths -/
+inductive XdgDirectoryList where
+  /-- System-wide data directories (`XDG_DATA_DIRS`, defaults `/usr/local/share:/usr/share`) -/
+  | DataDirs
+  /-- System-wide config directories (`XDG_CONFIG_DIRS`, default `/etc/xdg`) -/
+  | ConfigDirs
+  deriving Repr, BEq, Inhabited
 
-/-- Read data file from XDG data directories -/
-def readDataFile (subPath : System.FilePath) : IO String := do
-  let dirs ← getDataDirs
-  readFileFromDirs dirs subPath
+/-- Get the XDG base directory for the given type, with `subPath` appended -/
+def getXdgDirectory (xdgDir : XdgDirectory) (subPath : System.FilePath) : IO System.FilePath := do
+  let base ← match xdgDir with
+    | .Data   => getDataHome
+    | .Config => getConfigHome
+    | .Cache  => getCacheHome
+    | .State  => getStateHome
+    | .Runtime => getRuntimeDir
+  pure (base / subPath)
 
-/-- Read config file from XDG config directories -/
-def readConfigFile (subPath : System.FilePath) : IO String := do
-  let dirs ← getConfigDirs
-  readFileFromDirs dirs subPath
+/-- Get the system-wide XDG directory search path for the given type -/
+def getXdgDirectoryList (xdgDirList : XdgDirectoryList) : IO (List System.FilePath) := do
+  match xdgDirList with
+  | .DataDirs =>
+    match (← IO.getEnv "XDG_DATA_DIRS") with
+    | some dirs => pure (parseXdgDirs dirs)
+    | none => pure [⟨"/usr/local/share"⟩, ⟨"/usr/share"⟩]
+  | .ConfigDirs =>
+    match (← IO.getEnv "XDG_CONFIG_DIRS") with
+    | some dirs => pure (parseXdgDirs dirs)
+    | none => pure [⟨"/etc/xdg"⟩]
 
-/-- Read state file from XDG state home -/
-def readStateFile (subPath : System.FilePath) : IO String :=
-  readFileFromDir getStateHome subPath
-
-/-- Read cache file from XDG cache home -/
-def readCacheFile (subPath : System.FilePath) : IO String :=
-  readFileFromDir getCacheHome subPath
-
-/-- Read runtime file from XDG runtime directory -/
-def readRuntimeFile (subPath : System.FilePath) : IO String :=
-  readFileFromDir getRuntimeDir subPath
-
-/-- Write file to directory -/
-def writeFileToDir (getDir : IO System.FilePath) (subPath : System.FilePath) (content : String) : IO Unit := do
-  let dir ← getDir
-  IO.FS.createDirAll dir
-  let filePath := dir / subPath
-  -- Create parent directory if it doesn't exist
-  match filePath.parent with
-  | some parent => IO.FS.createDirAll parent
-  | none => pure ()
-  IO.FS.writeFile filePath content
-
-/-- Write config file to XDG config home -/
-def writeConfigFile (subPath : System.FilePath) (content : String) : IO Unit :=
-  writeFileToDir getConfigHome subPath content
-
-/-- Write data file to XDG data home -/
-def writeDataFile (subPath : System.FilePath) (content : String) : IO Unit :=
-  writeFileToDir getDataHome subPath content
-
-/-- Write cache file to XDG cache home -/
-def writeCacheFile (subPath : System.FilePath) (content : String) : IO Unit :=
-  writeFileToDir getCacheHome subPath content
-
-/-- Write state file to XDG state home -/
-def writeStateFile (subPath : System.FilePath) (content : String) : IO Unit :=
-  writeFileToDir getStateHome subPath content
-
-/-- Write runtime file to XDG runtime directory -/
-def writeRuntimeFile (subPath : System.FilePath) (content : String) : IO Unit :=
-  writeFileToDir getRuntimeDir subPath content
-
-/-- Try to read file, returning None if it fails -/
-def maybeReadFile (action : IO String) : IO (Option String) := do
-  try
-    some <$> action
-  catch _ =>
-    pure none
-
-/-- Maybe read data file -/
-def maybeReadDataFile (subPath : System.FilePath) : IO (Option String) :=
-  maybeReadFile (readDataFile subPath)
-
-/-- Maybe read config file -/
-def maybeReadConfigFile (subPath : System.FilePath) : IO (Option String) :=
-  maybeReadFile (readConfigFile subPath)
-
-/-- Maybe read state file -/
-def maybeReadStateFile (subPath : System.FilePath) : IO (Option String) :=
-  maybeReadFile (readStateFile subPath)
-
-/-- Maybe read cache file -/
-def maybeReadCacheFile (subPath : System.FilePath) : IO (Option String) :=
-  maybeReadFile (readCacheFile subPath)
-
-/-- Maybe read runtime file -/
-def maybeReadRuntimeFile (subPath : System.FilePath) : IO (Option String) :=
-  maybeReadFile (readRuntimeFile subPath)
+/-- Get the temporary directory (`$TMPDIR` or `/tmp`) -/
+def getTemporaryDirectory : IO System.FilePath := do
+  match (← IO.getEnv "TMPDIR") with
+  | some dir => pure ⟨dir⟩
+  | none => pure ⟨"/tmp"⟩
 
 end System.Xdg
