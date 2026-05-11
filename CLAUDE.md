@@ -12,20 +12,14 @@ lake build
 lake test
 
 # Build a specific target
-lake build System.Xdg
-
-# Run the demo executable
-lake exe xdg
+lake build Xdg
 ```
 
 ## Architecture
 
 This is a Lean 4 library implementing the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
 
-### Library modules
+The project has a flat structure with two Lean files:
 
-- **`System/Xdg.lean`** (`namespace System.Xdg`) — Base Directory spec: `getDataHome`, `getConfigHome`, `getCacheHome`, `getStateHome`, `getRuntimeDir`, `getDataDirs`, `getConfigDirs`, and read/write helpers (`readDataFile`, `writeConfigFile`, etc.). All functions are `IO` and fall back to XDG-spec defaults when env vars are unset.
-
-### Test structure
-
-Tests live under `Test`.
+- **`Xdg.lean`** (`namespace System.Xdg`) — Full implementation. Exposes two inductive types (`XdgDirectory` for single user dirs, `XdgDirectoryList` for system-wide search paths) and four public functions: `getXdgDirectory`, `getXdgDirectoryList`, `getHomeDirectory`, `getTemporaryDirectory`. All functions are `IO` and fall back to XDG-spec defaults when env vars are unset. `XdgDirectory.Runtime` (`XDG_RUNTIME_DIR`) is an extension beyond the Haskell `directory` library API that the rest of the public API mirrors.
+- **`XdgTest/Basic.lean`** — Unit tests for `parseXdgDirs` using `#guard_msgs`.
