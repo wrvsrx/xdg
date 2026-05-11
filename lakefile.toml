@@ -1,5 +1,5 @@
 name = "xdg"
-version = "0.9.0"
+version = "0.10.0-dev"
 defaultTargets = ["xdg", "System.Xdg"]
 testDriver = "Test.System.Xdg"
 
