@@ -104,7 +104,11 @@ def getXdgDirectory (xdgDir : XdgDirectory) (subPath : System.FilePath) : IO Sys
     | .Cache  => getCacheHome
     | .State  => getStateHome
     | .Runtime => getRuntimeDir
-  pure (base / subPath)
+  pure (
+    match subPath with
+      | "" => base
+      | _ => base / subPath
+  )
 
 /-- Get the system-wide XDG directory search path for the given type -/
 def getXdgDirectoryList (xdgDirList : XdgDirectoryList) : IO (List System.FilePath) := do
